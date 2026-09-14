@@ -1,7 +1,7 @@
 import java.util.Map;
 
 public class API {
-    private final String name;
+    private final String provider_name;
     private final String url;
     private final String authHeader;
     private final String authPrefix;
@@ -9,14 +9,14 @@ public class API {
     private final Map<String, String> extraHeaders;
 
     public API(
-        String name,
+        String provider_name,
         String url,
         String authHeader,
         String authPrefix,
         String body,
         Map<String, String> extraHeaders
     ) {
-        this.name = name;
+        this.provider_name = provider_name;
         this.url = url;
         this.authHeader = authHeader;
         this.authPrefix = authPrefix;
@@ -24,8 +24,8 @@ public class API {
         this.extraHeaders = extraHeaders;
     }
 
-    public String getName() {
-        return name;
+    public String getProvider_name() {
+        return provider_name;
     }
 
     public String getUrl() {

@@ -64,6 +64,7 @@ public class KeyCheck {
             )
         );
 
+         boolean API_Accepted = false;
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Enter API Provier Name: ");
@@ -73,7 +74,7 @@ public class KeyCheck {
         String API_KEY = scanner.nextLine();
 
         API api = apis.stream()
-        .filter(item-> item.getName().equalsIgnoreCase(providerName))
+        .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))
         .findFirst()
         .orElse(null);
         
@@ -100,6 +101,8 @@ public class KeyCheck {
 
             if (status >= 200 && status < 300) {
                 System.out.println("Key accepted.");
+                API_Accepted = true;
+
             } else if (status == 401) {
                 System.out.println("Key is invalid or revoked.");
             } else if (status == 403) {
@@ -112,8 +115,20 @@ public class KeyCheck {
             }
         } catch (Exception exception) {
             System.out.println("Request failed: " + exception.getMessage());
-        } finally {
-            scanner.close();
+        }
+
+        if(API_Accepted){
+            Accepted_api acceptedApi = new Accepted_api(
+                    api.getProvider_name(),
+                    api.getUrl(),
+                    api.getAuthHeader(),
+                    api.getAuthPrefix(),
+                    api.getBody(),
+                    api.getExtraHeaders(),
+                    API_KEY
+            );
+
+            Responses.processApi(acceptedApi);
         }
 
 
