@@ -128,7 +128,10 @@ public class KeyCheck {
                     API_KEY
             );
 
-            Responses.processApi(acceptedApi);
+            while(true){
+
+                Responses.processApi(acceptedApi);
+            }
         }
 
 
