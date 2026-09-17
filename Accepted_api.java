@@ -1,4 +1,5 @@
 import java.util.Map;
+import javax.crypto.SecretKey;
 
 public class Accepted_api {
     private final String provider_name;
@@ -8,6 +9,8 @@ public class Accepted_api {
     private final String body;
     private final Map<String, String> extraheaders;
     private final String API;
+    private final SecretKey secretKey;
+
 
     public Accepted_api(
             String provider_name,
@@ -16,7 +19,8 @@ public class Accepted_api {
             String authPrefix,
             String body,
             Map<String, String> extraheaders,
-            String API
+            String API,
+            SecretKey secretKey
     ){
         this.provider_name = provider_name;
         this.url = url;
@@ -25,6 +29,8 @@ public class Accepted_api {
         this.body = body;
         this.extraheaders = extraheaders;
         this.API = API;
+        this.secretKey = secretKey;
+
 
     }
 
@@ -53,6 +59,8 @@ public class Accepted_api {
     public String getAPI(){
         return API;
     }
+
+    public SecretKey getSecretKey(){return secretKey;}
 
 }
 

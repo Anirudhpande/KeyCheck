@@ -5,10 +5,19 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import javax.crypto.SecretKey;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Base64;
+
 
 public class KeyCheck {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
          List<API> apis = List.of(
             new API(
@@ -64,6 +73,8 @@ public class KeyCheck {
             )
         );
 
+        SecretKey secretKey = Encrypt.generateKey();
+
          boolean API_Accepted = false;
         Scanner scanner = new Scanner(System.in);
 
@@ -72,6 +83,8 @@ public class KeyCheck {
 
         System.out.println("Please Enter your API KEY");
         String API_KEY = scanner.nextLine();
+
+        String EncryptedAPi = Encrypt.encrypt(API_KEY, secretKey);
 
         API api = apis.stream()
         .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))
@@ -117,6 +130,8 @@ public class KeyCheck {
             System.out.println("Request failed: " + exception.getMessage());
         }
 
+        System.out.println(EncryptedAPi);
+
         if(API_Accepted){
             Accepted_api acceptedApi = new Accepted_api(
                     api.getProvider_name(),
@@ -125,7 +140,8 @@ public class KeyCheck {
                     api.getAuthPrefix(),
                     api.getBody(),
                     api.getExtraHeaders(),
-                    API_KEY
+                    EncryptedAPi,
+                    secretKey
             );
 
             while(true){

@@ -9,7 +9,7 @@ import com.google.gson.JsonParser;
 
 public class Responses {
 
-    public static void processApi(Accepted_api acceptedApi) {
+    public static void processApi(Accepted_api acceptedApi) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
 
@@ -22,12 +22,14 @@ public class Responses {
                 .uri(URI.create(acceptedApi.getUrl()))
                 .header(
                         acceptedApi.getAuthHeader(),
-                        acceptedApi.getAuthPrefix() + acceptedApi.getAPI()
+                        acceptedApi.getAuthPrefix() + Encrypt.decrypt(acceptedApi.getAPI(), acceptedApi.getSecretKey())
                 )
                 .header("Content-Type", "application/json")
                 .POST(
                         HttpRequest.BodyPublishers.ofString(body)
                 );
+
+        System.out.println(Encrypt.decrypt(acceptedApi.getAPI(), acceptedApi.getSecretKey()));
 
         acceptedApi.getExtraheaders()
                 .forEach(builder::header);
