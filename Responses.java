@@ -29,8 +29,6 @@ public class Responses {
                         HttpRequest.BodyPublishers.ofString(body)
                 );
 
-        System.out.println(Encrypt.decrypt(acceptedApi.getAPI(), acceptedApi.getSecretKey()));
-
         acceptedApi.getExtraheaders()
                 .forEach(builder::header);
 
