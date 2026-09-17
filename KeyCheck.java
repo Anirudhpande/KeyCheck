@@ -6,18 +6,25 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import javax.crypto.SecretKey;
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.Base64;
+
 
 
 public class KeyCheck {
 
     public static void main(String[] args) throws Exception {
+
+        SecretKey secretKey = Encrypt.generateKey();
+
+        boolean API_Accepted = false;
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter API Provier Name: ");
+        String providerName = scanner.nextLine();
+
+        System.out.println("Please Enter your API KEY");
+        String API_KEY = scanner.nextLine();
+
+        String EncryptedAPi = Encrypt.encrypt(API_KEY, secretKey);
 
          List<API> apis = List.of(
             new API(
@@ -26,9 +33,11 @@ public class KeyCheck {
                 "Authorization",
                 "Bearer ",
                 """
-                {"model":"gpt-5.6","input":"Reply with exactly: OK"}
+                {"model":"gpt-5.6","input":"Reply with OK"}
                 """,
-                Map.of()
+                Map.of(),
+                    EncryptedAPi,
+                    secretKey
             ),
             new API(
                 "Claude",
@@ -42,7 +51,9 @@ public class KeyCheck {
                   "messages":[{"role":"user","content":"Reply with OK"}]
                 }
                 """,
-                Map.of("anthropic-version", "2023-06-01")
+                Map.of("anthropic-version", "2023-06-01"),
+                    EncryptedAPi,
+                    secretKey
             ),
             new API(
                 "Gemini",
@@ -56,7 +67,9 @@ public class KeyCheck {
                   ]
                 }
                 """,
-                Map.of()
+                Map.of(),
+                    EncryptedAPi,
+                    secretKey
             ),
             new API(
                 "Groq",
@@ -69,22 +82,13 @@ public class KeyCheck {
                   "messages":[{"role":"user","content":"Reply with OK"}]
                 }
                 """,
-                Map.of()
+                Map.of(),
+                    EncryptedAPi,
+                    secretKey
             )
         );
 
-        SecretKey secretKey = Encrypt.generateKey();
 
-         boolean API_Accepted = false;
-        Scanner scanner = new Scanner(System.in);
-
-        System.out.println("Enter API Provier Name: ");
-        String providerName = scanner.nextLine();
-
-        System.out.println("Please Enter your API KEY");
-        String API_KEY = scanner.nextLine();
-
-        String EncryptedAPi = Encrypt.encrypt(API_KEY, secretKey);
 
         API api = apis.stream()
         .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))
@@ -131,7 +135,7 @@ public class KeyCheck {
         }
 
         if(API_Accepted){
-            Accepted_api acceptedApi = new Accepted_api(
+            API acceptedApi = new API(
                     api.getProvider_name(),
                     api.getUrl(),
                     api.getAuthHeader(),
