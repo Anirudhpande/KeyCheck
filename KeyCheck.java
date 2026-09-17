@@ -130,8 +130,6 @@ public class KeyCheck {
             System.out.println("Request failed: " + exception.getMessage());
         }
 
-        System.out.println(EncryptedAPi);
-
         if(API_Accepted){
             Accepted_api acceptedApi = new Accepted_api(
                     api.getProvider_name(),
