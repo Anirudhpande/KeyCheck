@@ -9,7 +9,7 @@ import com.google.gson.JsonParser;
 
 public class Responses {
 
-    public static void processApi(Accepted_api acceptedApi) throws Exception {
+    public static void processApi(API acceptedApi) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
 
@@ -29,7 +29,7 @@ public class Responses {
                         HttpRequest.BodyPublishers.ofString(body)
                 );
 
-        acceptedApi.getExtraheaders()
+        acceptedApi.getExtraHeaders()
                 .forEach(builder::header);
 
         try {
