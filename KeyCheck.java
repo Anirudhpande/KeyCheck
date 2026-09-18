@@ -88,6 +88,16 @@ public class KeyCheck {
             )
         );
 
+         List<String> models = ModelSelector.getModels(apis.get(0));
+
+//         for(String model: models){
+//             System.out.println(model);
+//         }
+
+         String selectedModel = ModelSelector.selectModel(apis.get(0));
+
+        System.out.println("Selected model: " + selectedModel);
+
 
 
         API api = apis.stream()
@@ -148,7 +158,7 @@ public class KeyCheck {
 
             while(true){
 
-                Responses.processApi(acceptedApi);
+                Responses.processApi(apis.get(0), selectedModel);
             }
         }
 
