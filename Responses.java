@@ -4,25 +4,88 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Locale;
 import java.util.Scanner;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class Responses {
 
-    public static void processApi(API acceptedApi) throws Exception {
+    public static void processApi(API acceptedApi, String selectedModel) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Prompt:");
         String prompt = scanner.nextLine();
 
-        String body = acceptedApi.getBody().replace("Reply with OK", prompt);
+        String body;
+
+        if (acceptedApi.getProvider_name().equalsIgnoreCase("OpenAI")) {
+
+            JsonObject json = new JsonObject();
+
+            json.addProperty("model", selectedModel);
+            json.addProperty("input", prompt);
+
+            body = json.toString();
+
+        } else if (acceptedApi.getProvider_name().equalsIgnoreCase("Groq")) {
+            JsonObject json = new JsonObject();
+
+            json.addProperty("model", selectedModel);
+
+            JsonArray messages = new JsonArray();
+
+            JsonObject message = new JsonObject();
+            message.addProperty("role", "user");
+            message.addProperty("content", prompt);
+
+            messages.add(message);
+
+            json.add("messages", messages);
+
+            body = json.toString();
+
+        } else if (acceptedApi.getProvider_name().equalsIgnoreCase("Anthropic")) {
+            JsonObject json = new JsonObject();
+
+            json.addProperty("model", selectedModel);
+            json.addProperty("max_tokens", 1024);
+
+            JsonArray messages = new JsonArray();
+
+            JsonObject message = new JsonObject();
+            message.addProperty("role", "user");
+            message.addProperty("content", prompt);
+
+            messages.add(message);
+
+            json.add("messages", messages);
+
+            body = json.toString();
+
+        } else {
+
+            body = acceptedApi.getBody().replace("Reply with OK", prompt);
+        }
+
+        String url = acceptedApi.getUrl();
+
+        if(acceptedApi.getProvider_name().equalsIgnoreCase("Gemini")){
+            url = "https://generativelanguage.googleapis.com/v1beta/" + selectedModel + ":generateContent";
+        }
+
 
         HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(acceptedApi.getUrl()))
+                .uri(URI.create(url))
                 .header(
                         acceptedApi.getAuthHeader(),
-                        acceptedApi.getAuthPrefix() + Encrypt.decrypt(acceptedApi.getAPI(), acceptedApi.getSecretKey())
+                        acceptedApi.getAuthPrefix() +
+                                Encrypt.decrypt(
+                                        acceptedApi.getAPI(),
+                                        acceptedApi.getSecretKey()
+                                )
                 )
                 .header("Content-Type", "application/json")
                 .POST(
@@ -39,6 +102,10 @@ public class Responses {
                                     builder.build(),
                                     HttpResponse.BodyHandlers.ofString()
                             );
+            System.out.println("Status code: " + response.statusCode());
+//            System.out.println("Status code: " + response.statusCode());
+            System.out.println("Response body:");
+            System.out.println(response.body());
 
             String answer = parseResponse(
                     acceptedApi.getProvider_name(), response.body()
@@ -84,15 +151,29 @@ public class Responses {
             return json.get("output_text").getAsString();
         }
 
-        return json
-                .getAsJsonArray("output")
-                .get(0)
-                .getAsJsonObject()
-                .getAsJsonArray("content")
-                .get(0)
-                .getAsJsonObject()
-                .get("text")
-                .getAsString();
+        JsonArray output = json.getAsJsonArray("output");
+
+        for (JsonElement element : output) {
+
+            JsonObject outputItem = element.getAsJsonObject();
+
+            if (!outputItem.has("content")) {
+                continue;
+            }
+
+            JsonArray content = outputItem.getAsJsonArray("content");
+
+            for (JsonElement contentElement : content) {
+
+                JsonObject contentItem = contentElement.getAsJsonObject();
+
+                if (contentItem.has("text")) {
+                    return contentItem.get("text").getAsString();
+                }
+            }
+        }
+
+        return "No text response found";
     }
 
     private static String parseClaude(JsonObject json) {

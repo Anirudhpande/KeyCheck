@@ -40,7 +40,7 @@ public class KeyCheck {
                     secretKey
             ),
             new API(
-                "Claude",
+                "Anthropic",
                 "https://api.anthropic.com/v1/messages",
                 "x-api-key",
                 "",
@@ -89,7 +89,6 @@ public class KeyCheck {
         );
 
 
-
         API api = apis.stream()
         .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))
         .findFirst()
@@ -135,20 +134,17 @@ public class KeyCheck {
         }
 
         if(API_Accepted){
-            API acceptedApi = new API(
-                    api.getProvider_name(),
-                    api.getUrl(),
-                    api.getAuthHeader(),
-                    api.getAuthPrefix(),
-                    api.getBody(),
-                    api.getExtraHeaders(),
-                    EncryptedAPi,
-                    secretKey
+
+            String selectedModel =
+                    ModelSelector.selectModel(api);
+
+            System.out.println(
+                    "Selected model: " + selectedModel
             );
 
             while(true){
 
-                Responses.processApi(acceptedApi);
+                Responses.processApi(api, selectedModel);
             }
         }
 
