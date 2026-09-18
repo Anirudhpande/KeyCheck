@@ -51,16 +51,6 @@ public class ModelSelector {
             );
         }
 
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(modelsUrl))
-                .header(
-                        api.getAuthHeader(),
-                        api.getAuthPrefix() + apiKey
-                )
-                .GET()
-                .build();
-
         HttpResponse<String> response = HttpClient.newHttpClient()
                 .send(
                         builder.build(),
@@ -159,7 +149,7 @@ public class ModelSelector {
             throw new Exception("No models available");
         }
 
-        System.out.println("/nAvailable Models:");
+        System.out.println("Available Models:");
 
         for(int i = 0; i<models.size(); i++){
             System.out.println((i+1) + ". " + models.get(i));
