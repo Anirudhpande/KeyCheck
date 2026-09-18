@@ -102,7 +102,7 @@ public class KeyCheck {
 
         HttpRequest.Builder builder = HttpRequest.newBuilder()
             .uri(URI.create(api.getUrl()))
-            .header(api.getAuthHeader(), api.getAuthPrefix() + API_KEY)
+            .header(api.getAuthHeader(), api.getAuthPrefix() + Encrypt.decrypt(api.getAPI(), api.getSecretKey()))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(api.getBody()));
 
