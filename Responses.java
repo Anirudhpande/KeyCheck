@@ -126,7 +126,7 @@ public class Responses {
         return switch (provider.toLowerCase()) {
             case "gemini" -> parseGemini(json);
             case "openai" -> parseOpenAI(json);
-            case "claude" -> parseClaude(json);
+            case "anthropic" -> parseAnthropic(json);
             case "groq" -> parseGroq(json);
             default -> "Unsupported provider";
         };
@@ -176,7 +176,7 @@ public class Responses {
         return "No text response found";
     }
 
-    private static String parseClaude(JsonObject json) {
+    private static String parseAnthropic(JsonObject json) {
         return json
                 .getAsJsonArray("content")
                 .get(0)
