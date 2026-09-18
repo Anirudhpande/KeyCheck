@@ -40,7 +40,7 @@ public class KeyCheck {
                     secretKey
             ),
             new API(
-                "Claude",
+                "Anthropic",
                 "https://api.anthropic.com/v1/messages",
                 "x-api-key",
                 "",
@@ -87,6 +87,7 @@ public class KeyCheck {
                     secretKey
             )
         );
+
 
         API api = apis.stream()
         .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))

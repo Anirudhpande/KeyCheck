@@ -30,6 +30,41 @@ public class Responses {
 
             body = json.toString();
 
+        } else if (acceptedApi.getProvider_name().equalsIgnoreCase("Groq")) {
+            JsonObject json = new JsonObject();
+
+            json.addProperty("model", selectedModel);
+
+            JsonArray messages = new JsonArray();
+
+            JsonObject message = new JsonObject();
+            message.addProperty("role", "user");
+            message.addProperty("content", prompt);
+
+            messages.add(message);
+
+            json.add("messages", messages);
+
+            body = json.toString();
+
+        } else if (acceptedApi.getProvider_name().equalsIgnoreCase("Anthropic")) {
+            JsonObject json = new JsonObject();
+
+            json.addProperty("model", selectedModel);
+            json.addProperty("max_tokens", 1024);
+
+            JsonArray messages = new JsonArray();
+
+            JsonObject message = new JsonObject();
+            message.addProperty("role", "user");
+            message.addProperty("content", prompt);
+
+            messages.add(message);
+
+            json.add("messages", messages);
+
+            body = json.toString();
+
         } else {
 
             body = acceptedApi.getBody().replace("Reply with OK", prompt);
@@ -69,8 +104,8 @@ public class Responses {
                             );
             System.out.println("Status code: " + response.statusCode());
 //            System.out.println("Status code: " + response.statusCode());
-//            System.out.println("Response body:");
-//            System.out.println(response.body());
+            System.out.println("Response body:");
+            System.out.println(response.body());
 
             String answer = parseResponse(
                     acceptedApi.getProvider_name(), response.body()

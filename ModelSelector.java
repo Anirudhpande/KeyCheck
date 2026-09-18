@@ -24,6 +24,10 @@ public class ModelSelector {
             modelsUrl = "https://api.openai.com/v1/models";
         } else if (api.getProvider_name().equalsIgnoreCase("Gemini")) {
             modelsUrl = "https://generativelanguage.googleapis.com/v1beta/models";
+        } else if (api.getProvider_name().equalsIgnoreCase("Anthropic")) {
+            modelsUrl = "https://api.anthropic.com/v1/models";
+        } else if (api.getProvider_name().equalsIgnoreCase("Groq")) {
+            modelsUrl = "https://api.groq.com/openai/v1/models";
         } else{
             throw new Exception("Provider not supported yet");
         }
@@ -32,8 +36,7 @@ public class ModelSelector {
                 .uri(URI.create(modelsUrl))
                 .GET();
 
-        if(api.getProvider_name().equalsIgnoreCase("OpenAI")){
-
+        if(api.getProvider_name().equalsIgnoreCase("OpenAI") || api.getProvider_name().equalsIgnoreCase("Groq")){
             builder.header(
                     api.getAuthHeader(), api.getAuthPrefix() + apiKey
             );
@@ -41,7 +44,13 @@ public class ModelSelector {
             builder.header(
                     "x-goog-api-key", apiKey
             );
+        } else if (api.getProvider_name().equalsIgnoreCase("Anthropic")) {
+            builder.header(
+                    "x-api-key",
+                    apiKey
+            );
         }
+
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(modelsUrl))
@@ -62,10 +71,16 @@ public class ModelSelector {
             throw new Exception("Failed to fetch models. Status code: " + response.statusCode());
         }
 
-        if(api.getProvider_name().equalsIgnoreCase("OpenAI")){
+        if (api.getProvider_name().equalsIgnoreCase("OpenAI")) {
+            return parseOpenAIModels(response.body());
+        } else if (api.getProvider_name().equalsIgnoreCase("Gemini")) {
+            return parseGeminiModels(response.body());
+        } else if (api.getProvider_name().equalsIgnoreCase("Claude")) {
+            return parseClaudeModels(response.body());
+        } else if (api.getProvider_name().equalsIgnoreCase("Groq")){
             return parseOpenAIModels(response.body());
         }
-        return parseGeminiModels(response.body());
+        throw new Exception("Provider not supported yet");
     }
 
     private static List<String> parseOpenAIModels(String responseBody){
@@ -111,6 +126,30 @@ public class ModelSelector {
         }
 
         return modelIds;
+    }
+
+    private static List<String> parseClaudeModels(String responseBody) {
+
+        JsonObject json =
+                JsonParser.parseString(responseBody)
+                        .getAsJsonObject();
+
+        JsonArray data =
+                json.getAsJsonArray("data");
+
+        List<String> models = new ArrayList<>();
+
+        for (JsonElement element : data) {
+
+            JsonObject model =
+                    element.getAsJsonObject();
+
+            models.add(
+                    model.get("id").getAsString()
+            );
+        }
+
+        return models;
     }
 
     public static String selectModel(API api) throws Exception{
