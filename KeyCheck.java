@@ -88,18 +88,6 @@ public class KeyCheck {
             )
         );
 
-         List<String> models = ModelSelector.getModels(apis.get(0));
-
-//         for(String model: models){
-//             System.out.println(model);
-//         }
-
-         String selectedModel = ModelSelector.selectModel(apis.get(0));
-
-        System.out.println("Selected model: " + selectedModel);
-
-
-
         API api = apis.stream()
         .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))
         .findFirst()
@@ -145,20 +133,17 @@ public class KeyCheck {
         }
 
         if(API_Accepted){
-            API acceptedApi = new API(
-                    api.getProvider_name(),
-                    api.getUrl(),
-                    api.getAuthHeader(),
-                    api.getAuthPrefix(),
-                    api.getBody(),
-                    api.getExtraHeaders(),
-                    EncryptedAPi,
-                    secretKey
+
+            String selectedModel =
+                    ModelSelector.selectModel(api);
+
+            System.out.println(
+                    "Selected model: " + selectedModel
             );
 
             while(true){
 
-                Responses.processApi(apis.get(0), selectedModel);
+                Responses.processApi(api, selectedModel);
             }
         }
 

@@ -35,11 +35,22 @@ public class Responses {
             body = acceptedApi.getBody().replace("Reply with OK", prompt);
         }
 
+        String url = acceptedApi.getUrl();
+
+        if(acceptedApi.getProvider_name().equalsIgnoreCase("Gemini")){
+            url = "https://generativelanguage.googleapis.com/v1beta/" + selectedModel + ":generateContent";
+        }
+
+
         HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(acceptedApi.getUrl()))
+                .uri(URI.create(url))
                 .header(
                         acceptedApi.getAuthHeader(),
-                        acceptedApi.getAuthPrefix() + Encrypt.decrypt(acceptedApi.getAPI(), acceptedApi.getSecretKey())
+                        acceptedApi.getAuthPrefix() +
+                                Encrypt.decrypt(
+                                        acceptedApi.getAPI(),
+                                        acceptedApi.getSecretKey()
+                                )
                 )
                 .header("Content-Type", "application/json")
                 .POST(
@@ -57,6 +68,9 @@ public class Responses {
                                     HttpResponse.BodyHandlers.ofString()
                             );
             System.out.println("Status code: " + response.statusCode());
+//            System.out.println("Status code: " + response.statusCode());
+//            System.out.println("Response body:");
+//            System.out.println(response.body());
 
             String answer = parseResponse(
                     acceptedApi.getProvider_name(), response.body()

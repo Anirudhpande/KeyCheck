@@ -22,9 +22,25 @@ public class ModelSelector {
 
         if(api.getProvider_name().equalsIgnoreCase("OpenAI")){
             modelsUrl = "https://api.openai.com/v1/models";
-        }
-        else{
+        } else if (api.getProvider_name().equalsIgnoreCase("Gemini")) {
+            modelsUrl = "https://generativelanguage.googleapis.com/v1beta/models";
+        } else{
             throw new Exception("Provider not supported yet");
+        }
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(modelsUrl))
+                .GET();
+
+        if(api.getProvider_name().equalsIgnoreCase("OpenAI")){
+
+            builder.header(
+                    api.getAuthHeader(), api.getAuthPrefix() + apiKey
+            );
+        } else if (api.getProvider_name().equalsIgnoreCase("Gemini")) {
+            builder.header(
+                    "x-goog-api-key", apiKey
+            );
         }
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -38,14 +54,18 @@ public class ModelSelector {
 
         HttpResponse<String> response = HttpClient.newHttpClient()
                 .send(
-                        request,
+                        builder.build(),
                         HttpResponse.BodyHandlers.ofString()
                 );
 
         if(response.statusCode() !=200){
             throw new Exception("Failed to fetch models. Status code: " + response.statusCode());
         }
-        return parseOpenAIModels(response.body());
+
+        if(api.getProvider_name().equalsIgnoreCase("OpenAI")){
+            return parseOpenAIModels(response.body());
+        }
+        return parseGeminiModels(response.body());
     }
 
     private static List<String> parseOpenAIModels(String responseBody){
@@ -66,6 +86,31 @@ public class ModelSelector {
         }
 
         return models;
+    }
+
+    private static List<String> parseGeminiModels(String responseBody) {
+
+        JsonObject json =
+                JsonParser.parseString(responseBody)
+                        .getAsJsonObject();
+
+        JsonArray models =
+                json.getAsJsonArray("models");
+
+        List<String> modelIds = new ArrayList<>();
+
+        for (JsonElement element : models) {
+
+            JsonObject model =
+                    element.getAsJsonObject();
+
+            String name =
+                    model.get("name").getAsString();
+
+            modelIds.add(name);
+        }
+
+        return modelIds;
     }
 
     public static String selectModel(API api) throws Exception{
