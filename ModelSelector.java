@@ -65,7 +65,7 @@ public class ModelSelector {
             return parseOpenAIModels(response.body());
         } else if (api.getProvider_name().equalsIgnoreCase("Gemini")) {
             return parseGeminiModels(response.body());
-        } else if (api.getProvider_name().equalsIgnoreCase("Claude")) {
+        } else if (api.getProvider_name().equalsIgnoreCase("Anthropic")) {
             return parseClaudeModels(response.body());
         } else if (api.getProvider_name().equalsIgnoreCase("Groq")){
             return parseOpenAIModels(response.body());
@@ -159,7 +159,7 @@ public class ModelSelector {
 
         int choice = scanner.nextInt();
 
-        System.out.println("\nSelect Model");
+        System.out.println("Select Model");
 
         if(choice < 1 || choice > models.size()){
             throw new IllegalArgumentException("Invalid model selection");
