@@ -1,13 +1,8 @@
+import java.sql.SQLOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import javax.crypto.SecretKey;
-
-
 
 public class KeyCheck {
 
@@ -15,139 +10,169 @@ public class KeyCheck {
 
         SecretKey secretKey = Encrypt.generateKey();
 
-        boolean API_Accepted = false;
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("Enter API Provier Name: ");
+        System.out.println("Enter API Provider Name:");
         String providerName = scanner.nextLine();
 
         System.out.println("Please Enter your API KEY");
         String API_KEY = scanner.nextLine();
 
-        String EncryptedAPi = Encrypt.encrypt(API_KEY, secretKey);
+        String encryptedAPI =
+                Encrypt.encrypt(API_KEY, secretKey);
 
-         List<API> apis = List.of(
-            new API(
-                "OpenAI",
-                "https://api.openai.com/v1/responses",
-                "Authorization",
-                "Bearer ",
-                """
-                {"model":"gpt-5.6","input":"Reply with OK"}
-                """,
-                Map.of(),
-                    EncryptedAPi,
-                    secretKey
-            ),
-            new API(
-                "Anthropic",
-                "https://api.anthropic.com/v1/messages",
-                "x-api-key",
-                "",
-                """
-                {
-                  "model":"claude-sonnet-4-20250514",
-                  "max_tokens":1,
-                  "messages":[{"role":"user","content":"Reply with OK"}]
-                }
-                """,
-                Map.of("anthropic-version", "2023-06-01"),
-                    EncryptedAPi,
-                    secretKey
-            ),
-            new API(
-                "Gemini",
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
-                "x-goog-api-key",
-                "",
-                """
-                {
-                  "contents":[
-                    {"parts":[{"text":"Reply with OK"}]}
-                  ]
-                }
-                """,
-                Map.of(),
-                    EncryptedAPi,
-                    secretKey
-            ),
-            new API(
-                "Groq",
-                "https://api.groq.com/openai/v1/chat/completions",
-                "Authorization",
-                "Bearer ",
-                """
-                {
-                  "model":"openai/gpt-oss-20b",
-                  "messages":[{"role":"user","content":"Reply with OK"}]
-                }
-                """,
-                Map.of(),
-                    EncryptedAPi,
-                    secretKey
-            )
+        List<API> apis = List.of(
+                new API(
+                        "OpenAI",
+                        "https://api.openai.com/v1/responses",
+                        "Authorization",
+                        "Bearer ",
+                        """
+                        {"model":"gpt-5.6","input":"Reply with OK"}
+                        """,
+                        Map.of(),
+                        encryptedAPI,
+                        secretKey
+                ),
+
+                new API(
+                        "Anthropic",
+                        "https://api.anthropic.com/v1/messages",
+                        "x-api-key",
+                        "",
+                        """
+                        {
+                          "model":"claude-sonnet-4-20250514",
+                          "max_tokens":1,
+                          "messages":[
+                            {
+                              "role":"user",
+                              "content":"Reply with OK"
+                            }
+                          ]
+                        }
+                        """,
+                        Map.of(
+                                "anthropic-version",
+                                "2023-06-01"
+                        ),
+                        encryptedAPI,
+                        secretKey
+                ),
+
+                new API(
+                        "Gemini",
+                        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+                        "x-goog-api-key",
+                        "",
+                        """
+                        {
+                          "contents":[
+                            {
+                              "parts":[
+                                {
+                                  "text":"Reply with OK"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                        """,
+                        Map.of(),
+                        encryptedAPI,
+                        secretKey
+                ),
+
+                new API(
+                        "Groq",
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        "Authorization",
+                        "Bearer ",
+                        """
+                        {
+                          "model":"openai/gpt-oss-20b",
+                          "messages":[
+                            {
+                              "role":"user",
+                              "content":"Reply with OK"
+                            }
+                          ]
+                        }
+                        """,
+                        Map.of(),
+                        encryptedAPI,
+                        secretKey
+                )
         );
 
-
         API api = apis.stream()
-        .filter(item-> item.getProvider_name().equalsIgnoreCase(providerName))
-        .findFirst()
-        .orElse(null);
-        
-        if(api == null){
+                .filter(item ->
+                        item.getProvider_name()
+                                .equalsIgnoreCase(providerName)
+                )
+                .findFirst()
+                .orElse(null);
+
+        if (api == null) {
             System.out.println("Unsupported Provider");
             return;
         }
 
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-            .uri(URI.create(api.getUrl()))
-            .header(api.getAuthHeader(), api.getAuthPrefix() + Encrypt.decrypt(api.getAPI(), api.getSecretKey()))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(api.getBody()));
+        Provider provider;
 
-        api.getExtraHeaders().forEach(builder::header);
+        switch (providerName.toLowerCase()) {
 
+            case "openai":
+                provider = new OpenAIProvider();
+                break;
 
-        try {
-            HttpResponse<String> response = HttpClient.newHttpClient()
-                .send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            case "gemini":
+                provider = new GeminiProvider();
+                break;
 
-            int status = response.statusCode();
-            System.out.println("Status code: " + status);
+            case "groq":
+                provider = new GroqProvider();
+                break;
 
-            if (status >= 200 && status < 300) {
-                System.out.println("Key accepted.");
-                API_Accepted = true;
+            case "anthropic":
+                provider = new AnthropicProvider();
+                break;
 
-            } else if (status == 401) {
-                System.out.println("Key is invalid or revoked.");
-            } else if (status == 403) {
-                System.out.println("Key was recognized, but lacks permission or has restrictions.");
-            } else if (status == 429) {
-                System.out.println("Key may be valid, but is rate-limited or out of quota.");
-            } else {
-                System.out.println("Could not determine key validity.");
-                System.out.println(response.body());
-            }
-        } catch (Exception exception) {
-            System.out.println("Request failed: " + exception.getMessage());
+            default:
+                System.out.println("Unsupported Provider");
+                return;
         }
 
-        if(API_Accepted){
+        List<String> models =
+                provider.getModels(api);
 
-            String selectedModel =
-                    ModelSelector.selectModel(api);
+        String selectedModel =
+                ModelSelection.selectModel(
+                        models,
+                        scanner
+                );
+        while (true) {
 
-            System.out.println(
-                    "Selected model: " + selectedModel
-            );
+            System.out.print("\nYou: ");
 
-            while(true){
+            String prompt = scanner.nextLine();
 
-                Responses.processApi(api, selectedModel);
+            if (prompt.equalsIgnoreCase("exit")) {
+                break;
             }
+
+            String answer =
+                    provider.sendRequest(
+                            api,
+                            selectedModel,
+                            prompt
+                    );
+
+            System.out.println("\nAI: " + answer);
         }
 
 
+
+        scanner.close();
     }
 }
