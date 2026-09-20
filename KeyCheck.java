@@ -7,25 +7,19 @@ public class KeyCheck {
 
     public static void main(String[] args) throws Exception {
 
-        SecretKey secretKey =
-                Encrypt.generateKey();
+        KeyManager keyManager = new KeyManager(Encrypt.generateKey());
 
-        Scanner scanner =
-                new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
 
         System.out.println("Enter API Provider Name:");
-        String providerName =
-                scanner.nextLine();
+        String providerName =  scanner.nextLine();
 
         System.out.println("Please Enter your API KEY");
-        String API_KEY =
-                scanner.nextLine();
+        String API_KEY = scanner.nextLine();
 
-        String encryptedAPI =
-                Encrypt.encrypt(
-                        API_KEY,
-                        secretKey
-                );
+        String encryptedAPI = keyManager.encrypt(API_KEY);
+
+        SecretKey secretKey = keyManager.getSecretKey();
 
         API api;
 
@@ -117,7 +111,6 @@ public class KeyCheck {
 
             System.out.println("AI: " + answer);
         }
-
         scanner.close();
     }
 }
