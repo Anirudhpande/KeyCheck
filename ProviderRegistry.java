@@ -7,9 +7,9 @@ public class ProviderRegistry {
 
     static {
         providers.put("openai", new OpenAIProvider());
-//        providers.put("gemini", new GeminiProvider());
-//        providers.put("groq", new GroqProvider());
-//        providers.put("anthropic", new AnthropicProvider());
+        providers.put("gemini", new GeminiProvider());
+        providers.put("groq", new GroqProvider());
+        providers.put("anthropic", new AnthropicProvider());
     }
 
     public static Provider getProvider(String providerName){
