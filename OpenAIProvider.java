@@ -1,3 +1,4 @@
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -9,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OpenAIProvider implements Provider {
+
+    private final HttpClient client = HttpClient.newHttpClient();
 
     @Override
     public List<String> getModels(API api) throws Exception {
@@ -80,7 +83,7 @@ public class OpenAIProvider implements Provider {
     public String sendRequest(
             API api,
             String selectedModel,
-            String prompt
+            List<Message> messages
     ) throws Exception {
 
         String apiKey =
@@ -89,16 +92,38 @@ public class OpenAIProvider implements Provider {
                         api.getSecretKey()
                 );
 
-        JsonObject json = new JsonObject();
+        JsonObject json =
+                new JsonObject();
 
         json.addProperty(
                 "model",
                 selectedModel
         );
 
-        json.addProperty(
+        JsonArray input =
+                new JsonArray();
+
+        for (Message message : messages) {
+
+            JsonObject item =
+                    new JsonObject();
+
+            item.addProperty(
+                    "role",
+                    message.getRole()
+            );
+
+            item.addProperty(
+                    "content",
+                    message.getContent()
+            );
+
+            input.add(item);
+        }
+
+        json.add(
                 "input",
-                prompt
+                input
         );
 
         HttpRequest request =
@@ -124,11 +149,14 @@ public class OpenAIProvider implements Provider {
                         .build();
 
         HttpResponse<String> response =
-                HttpClient.newHttpClient()
-                        .send(
-                                request,
-                                HttpResponse.BodyHandlers.ofString()
-                        );
+                client.send(
+                        request,
+                        HttpResponse.BodyHandlers.ofString()
+                );
+
+        System.out.println(
+                "Status code: " + response.statusCode()
+        );
 
         if (response.statusCode() < 200 ||
                 response.statusCode() >= 300) {
@@ -139,7 +167,9 @@ public class OpenAIProvider implements Provider {
             );
         }
 
-        return parseResponse(response.body());
+        return parseResponse(
+                response.body()
+        );
     }
 
     private String parseResponse(String responseBody) {

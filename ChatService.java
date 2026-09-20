@@ -1,5 +1,7 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class ChatService {
 
@@ -14,22 +16,28 @@ public class ChatService {
     }
 
     public void Start() throws Exception {
+
+        List<Message> messages = new ArrayList<>();
         List<String> models = provider.getModels(api);
 
         String selectModel = ModelSelection.selectModel(models, scanner);
 
         while (true){
 
-            System.out.println("\nYou");
+            System.out.println("\nYou: ");
             String prompt = scanner.nextLine();
 
             if(prompt.equalsIgnoreCase("exit")){
                 break;
             }
 
-            String answer = provider.sendRequest(api, selectModel, prompt);
+            messages.add(new Message("user", prompt));
 
-            System.out.println("\nAI " + answer);
+            String answer = provider.sendRequest(api, selectModel,messages);
+
+            messages.add(new Message("assistant", answer));
+
+            System.out.println("\nAI: " + answer);
         }
     }
 }

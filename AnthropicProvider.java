@@ -89,13 +89,14 @@ public class AnthropicProvider implements Provider {
     public String sendRequest(
             API api,
             String selectedModel,
-            String prompt
+            List<Message> messages
     ) throws Exception {
 
-        String apiKey = Encrypt.decrypt(
-                api.getAPI(),
-                api.getSecretKey()
-        );
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
 
         JsonObject json =
                 new JsonObject();
@@ -110,27 +111,32 @@ public class AnthropicProvider implements Provider {
                 1024
         );
 
-        JsonArray messages =
+        JsonArray messageArray =
                 new JsonArray();
 
-        JsonObject message =
-                new JsonObject();
+        for (Message message : messages) {
 
-        message.addProperty(
-                "role",
-                "user"
-        );
+            JsonObject messageObject =
+                    new JsonObject();
 
-        message.addProperty(
-                "content",
-                prompt
-        );
+            messageObject.addProperty(
+                    "role",
+                    message.getRole()
+            );
 
-        messages.add(message);
+            messageObject.addProperty(
+                    "content",
+                    message.getContent()
+            );
+
+            messageArray.add(
+                    messageObject
+            );
+        }
 
         json.add(
                 "messages",
-                messages
+                messageArray
         );
 
         HttpRequest request =

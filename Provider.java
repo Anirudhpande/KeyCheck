@@ -7,7 +7,7 @@ public interface Provider {
     String sendRequest(
             API api,
             String selectedModel,
-            String prompt
+            List<Message> messages
     ) throws Exception;
 
 }

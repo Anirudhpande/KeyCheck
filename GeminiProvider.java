@@ -83,53 +83,74 @@ public class GeminiProvider implements Provider {
     public String sendRequest(
             API api,
             String selectedModel,
-            String prompt
+            List<Message> messages
     ) throws Exception {
 
-        String apiKey = Encrypt.decrypt(
-                api.getAPI(),
-                api.getSecretKey()
-        );
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
 
         String url =
                 "https://generativelanguage.googleapis.com/v1beta/"
                         + selectedModel
                         + ":generateContent";
 
+        JsonObject json =
+                new JsonObject();
 
-        JsonObject json = new JsonObject();
+        JsonArray contents =
+                new JsonArray();
 
-        JsonArray contents = new JsonArray();
+        for (Message message : messages) {
 
-        JsonObject content = new JsonObject();
+            JsonObject content =
+                    new JsonObject();
 
-        JsonArray parts = new JsonArray();
+            String role =
+                    message.getRole();
 
-        JsonObject part = new JsonObject();
+            if (role.equalsIgnoreCase("assistant")) {
+                role = "model";
+            }
 
-        part.addProperty(
-                "text",
-                prompt
-        );
+            content.addProperty(
+                    "role",
+                    role
+            );
 
-        parts.add(part);
+            JsonArray parts =
+                    new JsonArray();
 
-        content.add(
-                "parts",
-                parts
-        );
+            JsonObject part =
+                    new JsonObject();
 
-        contents.add(content);
+            part.addProperty(
+                    "text",
+                    message.getContent()
+            );
+
+            parts.add(part);
+
+            content.add(
+                    "parts",
+                    parts
+            );
+
+            contents.add(content);
+        }
 
         json.add(
                 "contents",
                 contents
         );
 
-
         HttpRequest request =
                 HttpRequest.newBuilder()
-                        .uri(URI.create(url))
+                        .uri(
+                                URI.create(url)
+                        )
                         .header(
                                 "x-goog-api-key",
                                 apiKey
@@ -145,7 +166,6 @@ public class GeminiProvider implements Provider {
                         )
                         .build();
 
-
         HttpResponse<String> response =
                 client.send(
                         request,
@@ -155,7 +175,6 @@ public class GeminiProvider implements Provider {
         System.out.println(
                 "Status code: " + response.statusCode()
         );
-
 
         if (response.statusCode() < 200 ||
                 response.statusCode() >= 300) {
