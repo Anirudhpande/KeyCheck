@@ -91,26 +91,8 @@ public class KeyCheck {
 
         List<String> models = provider.getModels(api);
 
-        String selectedModel = ModelSelection.selectModel(models, scanner);
+        ChatService chatService = new ChatService(provider, api, scanner);
 
-        while (true) {
-
-            System.out.print("\nYou: ");
-
-            String prompt = scanner.nextLine();
-
-            if (prompt.equalsIgnoreCase("exit")) {
-                break;
-            }
-
-            String answer = provider.sendRequest(
-                            api,
-                            selectedModel,
-                            prompt
-                    );
-
-            System.out.println("AI: " + answer);
-        }
-        scanner.close();
+        chatService.Start();
     }
 }
