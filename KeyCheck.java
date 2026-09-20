@@ -89,8 +89,6 @@ public class KeyCheck {
 
         Provider provider = ProviderRegistry.getProvider(providerName);
 
-        List<String> models = provider.getModels(api);
-
         ChatService chatService = new ChatService(provider, api, scanner);
 
         chatService.Start();
