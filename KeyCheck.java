@@ -29,8 +29,6 @@ public class KeyCheck {
 
         API api;
 
-        Provider provider;
-
         switch (providerName.toLowerCase()) {
 
             case "openai":
@@ -44,7 +42,31 @@ public class KeyCheck {
                         secretKey
                 );
 
-                provider = new OpenAIProvider();
+                break;
+
+            case "gemini":
+
+                api = new API(
+                        "Gemini",
+                        "x-goog-api-key",
+                        "",
+                        Map.of(),
+                        encryptedAPI,
+                        secretKey
+                );
+
+                break;
+
+            case "groq":
+
+                api = new API(
+                        "Groq",
+                        "Authorization",
+                        "Bearer ",
+                        Map.of(),
+                        encryptedAPI,
+                        secretKey
+                );
 
                 break;
 
@@ -62,79 +84,38 @@ public class KeyCheck {
                         secretKey
                 );
 
-                provider = new AnthropicProvider();
-
-                break;
-
-            case "gemini":
-
-                api = new API(
-                        "Gemini",
-                        "x-goog-api-key",
-                        "",
-                        Map.of(),
-                        encryptedAPI,
-                        secretKey
-                );
-
-                provider = new GeminiProvider();
-
-                break;
-
-            case "groq":
-
-                api = new API(
-                        "Groq",
-                        "Authorization",
-                        "Bearer ",
-                        Map.of(),
-                        encryptedAPI,
-                        secretKey
-                );
-
-                provider = new GroqProvider();
-
                 break;
 
             default:
 
-                System.out.println(
-                        "Unsupported Provider"
-                );
+                System.out.println("Unsupported Provider");
 
                 return;
         }
 
-        List<String> models =
-                provider.getModels(api);
+        Provider provider = ProviderRegistry.getProvider(providerName);
 
-        String selectedModel =
-                ModelSelection.selectModel(
-                        models,
-                        scanner
-                );
+        List<String> models = provider.getModels(api);
+
+        String selectedModel = ModelSelection.selectModel(models, scanner);
 
         while (true) {
 
             System.out.print("\nYou: ");
 
-            String prompt =
-                    scanner.nextLine();
+            String prompt = scanner.nextLine();
 
             if (prompt.equalsIgnoreCase("exit")) {
                 break;
             }
 
-            String answer =
-                    provider.sendRequest(
+            String answer = provider.sendRequest(
                             api,
                             selectedModel,
                             prompt
                     );
 
-            System.out.println(
-                    "\nAI: " + answer
-            );
+            System.out.println("AI: " + answer);
         }
 
         scanner.close();
