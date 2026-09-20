@@ -1,7 +1,11 @@
+package src.main.providers;
+
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import src.main.models.API;
+import src.main.models.Message;
+import src.main.security.Encrypt;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -10,49 +14,43 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AnthropicProvider implements Provider {
+public class OpenAIProvider implements Provider {
 
     private final HttpClient client = HttpClient.newHttpClient();
 
     @Override
     public List<String> getModels(API api) throws Exception {
 
-        String apiKey = Encrypt.decrypt(
-                api.getAPI(),
-                api.getSecretKey()
-        );
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
 
         HttpRequest request =
                 HttpRequest.newBuilder()
                         .uri(
                                 URI.create(
-                                        "https://api.anthropic.com/v1/models"
+                                        "https://api.openai.com/v1/models"
                                 )
                         )
                         .header(
-                                "x-api-key",
-                                apiKey
-                        )
-                        .header(
-                                "anthropic-version",
-                                "2023-06-01"
+                                api.getAuthHeader(),
+                                api.getAuthPrefix() + apiKey
                         )
                         .GET()
                         .build();
 
         HttpResponse<String> response =
-                client.send(
-                        request,
-                        HttpResponse.BodyHandlers.ofString()
-                );
+                HttpClient.newHttpClient()
+                        .send(
+                                request,
+                                HttpResponse.BodyHandlers.ofString()
+                        );
 
-        if (response.statusCode() < 200 ||
-                response.statusCode() >= 300) {
-
+        if (response.statusCode() != 200) {
             throw new Exception(
-                    "Failed to fetch Anthropic models. Status: "
-                            + response.statusCode()
-                            + "\n"
+                    "Failed to fetch OpenAI models: "
                             + response.body()
             );
         }
@@ -60,19 +58,20 @@ public class AnthropicProvider implements Provider {
         return parseModels(response.body());
     }
 
+
+
     private List<String> parseModels(String responseBody) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
-        JsonArray data =
+        var data =
                 json.getAsJsonArray("data");
 
-        List<String> models =
-                new ArrayList<>();
+        List<String> models = new ArrayList<>();
 
-        for (JsonElement element : data) {
+        data.forEach(element -> {
 
             JsonObject model =
                     element.getAsJsonObject();
@@ -80,7 +79,7 @@ public class AnthropicProvider implements Provider {
             models.add(
                     model.get("id").getAsString()
             );
-        }
+        });
 
         return models;
     }
@@ -106,53 +105,42 @@ public class AnthropicProvider implements Provider {
                 selectedModel
         );
 
-        json.addProperty(
-                "max_tokens",
-                1024
-        );
-
-        JsonArray messageArray =
+        JsonArray input =
                 new JsonArray();
 
         for (Message message : messages) {
 
-            JsonObject messageObject =
+            JsonObject item =
                     new JsonObject();
 
-            messageObject.addProperty(
+            item.addProperty(
                     "role",
                     message.getRole()
             );
 
-            messageObject.addProperty(
+            item.addProperty(
                     "content",
                     message.getContent()
             );
 
-            messageArray.add(
-                    messageObject
-            );
+            input.add(item);
         }
 
         json.add(
-                "messages",
-                messageArray
+                "input",
+                input
         );
 
         HttpRequest request =
                 HttpRequest.newBuilder()
                         .uri(
                                 URI.create(
-                                        "https://api.anthropic.com/v1/messages"
+                                        "https://api.openai.com/v1/responses"
                                 )
                         )
                         .header(
-                                "x-api-key",
-                                apiKey
-                        )
-                        .header(
-                                "anthropic-version",
-                                "2023-06-01"
+                                api.getAuthHeader(),
+                                api.getAuthPrefix() + apiKey
                         )
                         .header(
                                 "Content-Type",
@@ -179,9 +167,7 @@ public class AnthropicProvider implements Provider {
                 response.statusCode() >= 300) {
 
             throw new Exception(
-                    "Anthropic request failed. Status: "
-                            + response.statusCode()
-                            + "\n"
+                    "OpenAI request failed: "
                             + response.body()
             );
         }
@@ -197,28 +183,42 @@ public class AnthropicProvider implements Provider {
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
-        JsonArray content =
-                json.getAsJsonArray("content");
+        if (json.has("output_text")) {
 
-        if (content == null ||
-                content.isEmpty()) {
-
-            return "No response generated";
+            return json
+                    .get("output_text")
+                    .getAsString();
         }
 
-        for (JsonElement element : content) {
+        var output =
+                json.getAsJsonArray("output");
 
-            JsonObject contentItem =
+        for (var element : output) {
+
+            JsonObject outputItem =
                     element.getAsJsonObject();
 
-            if (contentItem.has("text")) {
+            if (!outputItem.has("content")) {
+                continue;
+            }
 
-                return contentItem
-                        .get("text")
-                        .getAsString();
+            var content =
+                    outputItem.getAsJsonArray("content");
+
+            for (var contentElement : content) {
+
+                JsonObject contentItem =
+                        contentElement.getAsJsonObject();
+
+                if (contentItem.has("text")) {
+
+                    return contentItem
+                            .get("text")
+                            .getAsString();
+                }
             }
         }
 
-        return "No response text found";
+        return "No text response found";
     }
 }

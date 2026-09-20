@@ -1,3 +1,5 @@
+package src.main.models;
+
 import javax.crypto.SecretKey;
 import java.util.Map;
 

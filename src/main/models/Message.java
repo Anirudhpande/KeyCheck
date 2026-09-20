@@ -1,3 +1,5 @@
+package src.main.models;
+
 public class Message {
 
     private final String role;

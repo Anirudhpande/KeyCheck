@@ -1,3 +1,10 @@
+package src.main.service;
+
+import src.main.models.API;
+import src.main.models.Message;
+import src.main.providers.Provider;
+import src.main.ui.ModelSelection;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;

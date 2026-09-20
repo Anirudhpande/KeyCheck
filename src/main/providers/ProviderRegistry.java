@@ -1,3 +1,5 @@
+package src.main.providers;
+
 import java.util.HashMap;
 import java.util.Map;
 

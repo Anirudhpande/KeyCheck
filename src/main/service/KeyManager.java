@@ -1,3 +1,7 @@
+package src.main.service;
+
+import src.main.security.Encrypt;
+
 import javax.crypto.SecretKey;
 
 public class KeyManager {

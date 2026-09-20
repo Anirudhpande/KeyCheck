@@ -1,7 +1,12 @@
+package src.main.providers;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import src.main.models.API;
+import src.main.models.Message;
+import src.main.security.Encrypt;
 
 import java.net.URI;
 import java.net.http.HttpClient;

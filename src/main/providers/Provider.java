@@ -1,3 +1,8 @@
+package src.main.providers;
+
+import src.main.models.API;
+import src.main.models.Message;
+
 import java.util.List;
 
 public interface Provider {

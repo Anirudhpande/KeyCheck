@@ -1,3 +1,12 @@
+package src.main.app;
+
+import src.main.models.API;
+import src.main.providers.Provider;
+import src.main.providers.ProviderRegistry;
+import src.main.security.Encrypt;
+import src.main.service.ChatService;
+import src.main.service.KeyManager;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
