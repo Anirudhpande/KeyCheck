@@ -1,14 +1,13 @@
 package src.main.app;
 
 import src.main.models.API;
+import src.main.models.ProviderConfig;
 import src.main.providers.Provider;
 import src.main.providers.ProviderRegistry;
 import src.main.security.Encrypt;
 import src.main.service.ChatService;
 import src.main.service.KeyManager;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import javax.crypto.SecretKey;
 
@@ -16,89 +15,50 @@ public class KeyCheck {
 
     public static void main(String[] args) throws Exception {
 
-        KeyManager keyManager = new KeyManager(Encrypt.generateKey());
+        KeyManager keyManager =
+                new KeyManager(
+                        Encrypt.generateKey()
+                );
 
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner =
+                new Scanner(System.in);
 
         System.out.println("Enter API Provider Name:");
-        String providerName =  scanner.nextLine();
+        String providerName =
+                scanner.nextLine();
 
         System.out.println("Please Enter your API KEY");
-        String API_KEY = scanner.nextLine();
+        String API_KEY =
+                scanner.nextLine();
 
-        String encryptedAPI = keyManager.encrypt(API_KEY);
+        String encryptedAPI =
+                keyManager.encrypt(API_KEY);
 
-        SecretKey secretKey = keyManager.getSecretKey();
+        SecretKey secretKey =
+                keyManager.getSecretKey();
 
-        API api;
+        ProviderConfig config =
+                ProviderRegistry.getConfig(providerName);
 
-        switch (providerName.toLowerCase()) {
-
-            case "openai":
-
-                api = new API(
-                        "OpenAI",
-                        "Authorization",
-                        "Bearer ",
-                        Map.of(),
+        API api =
+                new API(
+                        config.getProviderName(),
+                        config.getAuthHeader(),
+                        config.getAuthPrefix(),
+                        config.getExtraHeaders(),
                         encryptedAPI,
                         secretKey
                 );
 
-                break;
+        Provider provider =
+                ProviderRegistry.getProvider(providerName);
 
-            case "gemini":
-
-                api = new API(
-                        "Gemini",
-                        "x-goog-api-key",
-                        "",
-                        Map.of(),
-                        encryptedAPI,
-                        secretKey
+        ChatService chatService =
+                new ChatService(
+                        provider,
+                        api,
+                        scanner
                 );
-
-                break;
-
-            case "groq":
-
-                api = new API(
-                        "Groq",
-                        "Authorization",
-                        "Bearer ",
-                        Map.of(),
-                        encryptedAPI,
-                        secretKey
-                );
-
-                break;
-
-            case "anthropic":
-
-                api = new API(
-                        "Anthropic",
-                        "x-api-key",
-                        "",
-                        Map.of(
-                                "anthropic-version",
-                                "2023-06-01"
-                        ),
-                        encryptedAPI,
-                        secretKey
-                );
-
-                break;
-
-            default:
-
-                System.out.println("Unsupported Provider");
-
-                return;
-        }
-
-        Provider provider = ProviderRegistry.getProvider(providerName);
-
-        ChatService chatService = new ChatService(provider, api, scanner);
 
         chatService.Start();
     }
