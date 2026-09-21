@@ -6,7 +6,10 @@ import src.main.providers.Provider;
 import src.main.providers.ProviderRegistry;
 import src.main.security.Encrypt;
 import src.main.service.ChatService;
+import src.main.service.ContextManager;
+import src.main.service.HeuristicTokenEstimator;
 import src.main.service.KeyManager;
+import src.main.service.TokenEstimator;
 
 import java.util.Scanner;
 import javax.crypto.SecretKey;
@@ -24,10 +27,12 @@ public class KeyCheck {
                 new Scanner(System.in);
 
         System.out.println("Enter API Provider Name:");
+
         String providerName =
                 scanner.nextLine();
 
         System.out.println("Please Enter your API KEY");
+
         String API_KEY =
                 scanner.nextLine();
 
@@ -51,13 +56,24 @@ public class KeyCheck {
                 );
 
         Provider provider =
-                ProviderRegistry.getProvider(providerName);
+                ProviderRegistry.getProvider(
+                        providerName
+                );
+
+        TokenEstimator estimator =
+                new HeuristicTokenEstimator();
+
+        ContextManager contextManager =
+                new ContextManager(
+                        estimator
+                );
 
         ChatService chatService =
                 new ChatService(
                         provider,
                         api,
-                        scanner
+                        scanner,
+                        contextManager
                 );
 
         chatService.start();

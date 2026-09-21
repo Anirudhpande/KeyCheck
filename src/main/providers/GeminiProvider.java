@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.main.models.API;
 import src.main.models.Message;
+import src.main.models.ModelInfo;
 import src.main.models.ProviderResponse;
 import src.main.models.TokenUsage;
 import src.main.security.Encrypt;
@@ -19,28 +20,31 @@ import java.util.List;
 
 public class GeminiProvider implements Provider {
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final HttpClient client =
+            HttpClient.newHttpClient();
 
     @Override
     public List<String> getModels(API api) throws Exception {
 
-        String apiKey = Encrypt.decrypt(
-                api.getAPI(),
-                api.getSecretKey()
-        );
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(
-                        URI.create(
-                                "https://generativelanguage.googleapis.com/v1beta/models"
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(
+                                URI.create(
+                                        "https://generativelanguage.googleapis.com/v1beta/models"
+                                )
                         )
-                )
-                .header(
-                        "x-goog-api-key",
-                        apiKey
-                )
-                .GET()
-                .build();
+                        .header(
+                                "x-goog-api-key",
+                                apiKey
+                        )
+                        .GET()
+                        .build();
 
         HttpResponse<String> response =
                 client.send(
@@ -62,7 +66,9 @@ public class GeminiProvider implements Provider {
         return parseModels(response.body());
     }
 
-    private List<String> parseModels(String responseBody) {
+    private List<String> parseModels(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
@@ -71,7 +77,8 @@ public class GeminiProvider implements Provider {
         JsonArray models =
                 json.getAsJsonArray("models");
 
-        List<String> modelIds = new ArrayList<>();
+        List<String> modelIds =
+                new ArrayList<>();
 
         for (JsonElement element : models) {
 
@@ -84,6 +91,111 @@ public class GeminiProvider implements Provider {
         }
 
         return modelIds;
+    }
+
+    @Override
+    public ModelInfo getModelInfo(
+            API api,
+            String modelId
+    ) throws Exception {
+
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(
+                                URI.create(
+                                        "https://generativelanguage.googleapis.com/v1beta/models"
+                                )
+                        )
+                        .header(
+                                "x-goog-api-key",
+                                apiKey
+                        )
+                        .GET()
+                        .build();
+
+        HttpResponse<String> response =
+                client.send(
+                        request,
+                        HttpResponse.BodyHandlers.ofString()
+                );
+
+        if (response.statusCode() < 200 ||
+                response.statusCode() >= 300) {
+
+            throw new Exception(
+                    "Failed to fetch Gemini model info. Status: "
+                            + response.statusCode()
+                            + "\n"
+                            + response.body()
+            );
+        }
+
+        JsonObject json =
+                JsonParser.parseString(
+                        response.body()
+                ).getAsJsonObject();
+
+        JsonArray models =
+                json.getAsJsonArray("models");
+
+        for (JsonElement element : models) {
+
+            JsonObject model =
+                    element.getAsJsonObject();
+
+            String name =
+                    model.get("name")
+                            .getAsString();
+
+            if (name.equals(modelId)) {
+
+                if (!model.has("inputTokenLimit") ||
+                        model.get("inputTokenLimit").isJsonNull()) {
+
+                    throw new Exception(
+                            "Gemini model does not provide "
+                                    + "inputTokenLimit: "
+                                    + modelId
+                    );
+                }
+
+                long maxContextTokens =
+                        model.get(
+                                "inputTokenLimit"
+                        ).getAsLong();
+
+                long maxOutputTokens = 2048;
+
+                if (model.has("outputTokenLimit") &&
+                        !model.get(
+                                "outputTokenLimit"
+                        ).isJsonNull()) {
+
+                    maxOutputTokens =
+                            model.get(
+                                    "outputTokenLimit"
+                            ).getAsLong();
+                }
+
+                return new ModelInfo(
+                        "Gemini",
+                        modelId,
+                        maxContextTokens,
+                        maxOutputTokens
+                );
+            }
+        }
+
+        throw new Exception(
+                "Gemini model not found: "
+                        + modelId
+        );
     }
 
     @Override
@@ -207,7 +319,8 @@ public class GeminiProvider implements Provider {
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
-        String answer = "No response generated";
+        String answer =
+                "No response generated";
 
         JsonArray candidates =
                 json.getAsJsonArray("candidates");
@@ -243,8 +356,7 @@ public class GeminiProvider implements Provider {
                         if (part.has("text")) {
 
                             answer =
-                                    part
-                                            .get("text")
+                                    part.get("text")
                                             .getAsString();
 
                             break;
@@ -255,32 +367,33 @@ public class GeminiProvider implements Provider {
         }
 
         JsonObject usage =
-                json.getAsJsonObject("usageMetadata");
+                json.getAsJsonObject(
+                        "usageMetadata"
+                );
 
         long inputTokens =
-                usage
-                        .get("promptTokenCount")
+                usage.get("promptTokenCount")
                         .getAsLong();
 
         long outputTokens =
-                usage
-                        .get("candidatesTokenCount")
+                usage.get("candidatesTokenCount")
                         .getAsLong();
 
         long totalTokens =
-                usage
-                        .get("totalTokenCount")
+                usage.get("totalTokenCount")
                         .getAsLong();
 
         long cachedInputTokens = 0;
 
         if (usage.has("cachedContentTokenCount") &&
-                !usage.get("cachedContentTokenCount").isJsonNull()) {
+                !usage.get(
+                        "cachedContentTokenCount"
+                ).isJsonNull()) {
 
             cachedInputTokens =
-                    usage
-                            .get("cachedContentTokenCount")
-                            .getAsLong();
+                    usage.get(
+                            "cachedContentTokenCount"
+                    ).getAsLong();
         }
 
         TokenUsage tokenUsage =

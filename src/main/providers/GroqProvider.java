@@ -4,10 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import src.main.models.API;
-import src.main.models.Message;
-import src.main.models.ProviderResponse;
-import src.main.models.TokenUsage;
+import src.main.models.*;
 import src.main.security.Encrypt;
 
 import java.net.URI;
@@ -19,15 +16,17 @@ import java.util.List;
 
 public class GroqProvider implements Provider {
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final HttpClient client =
+            HttpClient.newHttpClient();
 
     @Override
     public List<String> getModels(API api) throws Exception {
 
-        String apiKey = Encrypt.decrypt(
-                api.getAPI(),
-                api.getSecretKey()
-        );
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
 
         HttpRequest request =
                 HttpRequest.newBuilder()
@@ -63,7 +62,9 @@ public class GroqProvider implements Provider {
         return parseModels(response.body());
     }
 
-    private List<String> parseModels(String responseBody) {
+    private List<String> parseModels(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
@@ -86,6 +87,86 @@ public class GroqProvider implements Provider {
         }
 
         return models;
+    }
+
+    @Override
+    public ModelInfo getModelInfo(
+            API api,
+            String modelId
+    ) throws Exception {
+
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(
+                                URI.create(
+                                        "https://api.groq.com/openai/v1/models/"
+                                                + modelId
+                                )
+                        )
+                        .header(
+                                api.getAuthHeader(),
+                                api.getAuthPrefix() + apiKey
+                        )
+                        .GET()
+                        .build();
+
+        HttpResponse<String> response =
+                client.send(
+                        request,
+                        HttpResponse.BodyHandlers.ofString()
+                );
+
+        if (response.statusCode() < 200 ||
+                response.statusCode() >= 300) {
+
+            throw new Exception(
+                    "Failed to fetch Groq model info. Status: "
+                            + response.statusCode()
+                            + "\n"
+                            + response.body()
+            );
+        }
+
+        JsonObject json =
+                JsonParser.parseString(
+                        response.body()
+                ).getAsJsonObject();
+
+        if (!json.has("context_window") ||
+                json.get("context_window").isJsonNull()) {
+
+            throw new Exception(
+                    "Groq model does not provide context_window: "
+                            + modelId
+            );
+        }
+
+        long maxContextTokens =
+                json.get("context_window")
+                        .getAsLong();
+
+        long maxOutputTokens = 2048;
+
+        if (json.has("max_completion_tokens") &&
+                !json.get("max_completion_tokens").isJsonNull()) {
+
+            maxOutputTokens =
+                    json.get("max_completion_tokens")
+                            .getAsLong();
+        }
+
+        return new ModelInfo(
+                "Groq",
+                modelId,
+                maxContextTokens,
+                maxOutputTokens
+        );
     }
 
     @Override
@@ -194,7 +275,8 @@ public class GroqProvider implements Provider {
         JsonArray choices =
                 json.getAsJsonArray("choices");
 
-        String answer = "No response generated";
+        String answer =
+                "No response generated";
 
         if (choices != null &&
                 !choices.isEmpty()) {

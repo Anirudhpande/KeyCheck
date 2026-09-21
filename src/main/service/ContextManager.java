@@ -8,7 +8,7 @@ import java.util.List;
 
 public class ContextManager {
 
-    private static final double COMPACTION_THRESHOLD = 0.75;
+    private static final double COMPACTION_THRESHOLD = 0.01;
     private static final long DEFAULT_RESERVED_OUTPUT = 2048;
 
     private final TokenEstimator tokenEstimator;

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.main.models.API;
 import src.main.models.Message;
+import src.main.models.ModelInfo;
 import src.main.models.ProviderResponse;
 import src.main.models.TokenUsage;
 import src.main.security.Encrypt;
@@ -19,15 +20,17 @@ import java.util.List;
 
 public class AnthropicProvider implements Provider {
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final HttpClient client =
+            HttpClient.newHttpClient();
 
     @Override
     public List<String> getModels(API api) throws Exception {
 
-        String apiKey = Encrypt.decrypt(
-                api.getAPI(),
-                api.getSecretKey()
-        );
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
 
         HttpRequest request =
                 HttpRequest.newBuilder()
@@ -67,7 +70,9 @@ public class AnthropicProvider implements Provider {
         return parseModels(response.body());
     }
 
-    private List<String> parseModels(String responseBody) {
+    private List<String> parseModels(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
@@ -90,6 +95,91 @@ public class AnthropicProvider implements Provider {
         }
 
         return models;
+    }
+
+    @Override
+    public ModelInfo getModelInfo(
+            API api,
+            String modelId
+    ) throws Exception {
+
+        String apiKey =
+                Encrypt.decrypt(
+                        api.getAPI(),
+                        api.getSecretKey()
+                );
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(
+                                URI.create(
+                                        "https://api.anthropic.com/v1/models/"
+                                                + modelId
+                                )
+                        )
+                        .header(
+                                "x-api-key",
+                                apiKey
+                        )
+                        .header(
+                                "anthropic-version",
+                                "2023-06-01"
+                        )
+                        .GET()
+                        .build();
+
+        HttpResponse<String> response =
+                client.send(
+                        request,
+                        HttpResponse.BodyHandlers.ofString()
+                );
+
+        if (response.statusCode() < 200 ||
+                response.statusCode() >= 300) {
+
+            throw new Exception(
+                    "Failed to fetch Anthropic model info. Status: "
+                            + response.statusCode()
+                            + "\n"
+                            + response.body()
+            );
+        }
+
+        JsonObject json =
+                JsonParser.parseString(
+                        response.body()
+                ).getAsJsonObject();
+
+        if (!json.has("max_input_tokens") ||
+                json.get("max_input_tokens").isJsonNull()) {
+
+            throw new Exception(
+                    "Anthropic model does not provide "
+                            + "max_input_tokens: "
+                            + modelId
+            );
+        }
+
+        long maxContextTokens =
+                json.get("max_input_tokens")
+                        .getAsLong();
+
+        long maxOutputTokens = 2048;
+
+        if (json.has("max_tokens") &&
+                !json.get("max_tokens").isJsonNull()) {
+
+            maxOutputTokens =
+                    json.get("max_tokens")
+                            .getAsLong();
+        }
+
+        return new ModelInfo(
+                "Anthropic",
+                modelId,
+                maxContextTokens,
+                maxOutputTokens
+        );
     }
 
     @Override
@@ -206,7 +296,8 @@ public class AnthropicProvider implements Provider {
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
-        String answer = "No response generated";
+        String answer =
+                "No response generated";
 
         JsonArray content =
                 json.getAsJsonArray("content");
@@ -235,24 +326,24 @@ public class AnthropicProvider implements Provider {
                 json.getAsJsonObject("usage");
 
         long inputTokens =
-                usage
-                        .get("input_tokens")
+                usage.get("input_tokens")
                         .getAsLong();
 
         long outputTokens =
-                usage
-                        .get("output_tokens")
+                usage.get("output_tokens")
                         .getAsLong();
 
         long cachedInputTokens = 0;
 
         if (usage.has("cache_read_input_tokens") &&
-                !usage.get("cache_read_input_tokens").isJsonNull()) {
+                !usage.get(
+                        "cache_read_input_tokens"
+                ).isJsonNull()) {
 
             cachedInputTokens =
-                    usage
-                            .get("cache_read_input_tokens")
-                            .getAsLong();
+                    usage.get(
+                            "cache_read_input_tokens"
+                    ).getAsLong();
         }
 
         long totalTokens =

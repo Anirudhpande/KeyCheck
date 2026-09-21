@@ -9,6 +9,7 @@ import com.google.gson.JsonParser;
 import src.main.models.API;
 import src.main.models.Message;
 import src.main.security.Encrypt;
+import src.main.models.ModelInfo;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -281,5 +282,47 @@ public class OpenAIProvider implements Provider {
                         : answer,
                 tokenUsage
         );
+    }
+
+    @Override
+    public ModelInfo getModelInfo(
+            API api,
+            String modelId
+    ) throws Exception {
+
+        switch (modelId) {
+
+            case "gpt-5.6-sol":
+            case "gpt-5.6":
+                return new ModelInfo(
+                        "OpenAI",
+                        modelId,
+                        1_050_000,
+                        128_000
+                );
+
+            case "gpt-5.6-terra":
+                return new ModelInfo(
+                        "OpenAI",
+                        modelId,
+                        1_050_000,
+                        128_000
+                );
+
+            case "gpt-5.6-luna":
+                return new ModelInfo(
+                        "OpenAI",
+                        modelId,
+                        1_050_000,
+                        128_000
+                );
+
+            default:
+
+                throw new Exception(
+                        "OpenAI model metadata not configured: "
+                                + modelId
+                );
+        }
     }
 }

@@ -1,13 +1,15 @@
 package src.main.service;
 
 import src.main.models.API;
+import src.main.models.ContextBudget;
+import src.main.models.ConversationContext;
 import src.main.models.Message;
+import src.main.models.ModelInfo;
 import src.main.models.ProviderResponse;
 import src.main.models.TokenUsage;
 import src.main.providers.Provider;
 import src.main.ui.ModelSelection;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -16,15 +18,18 @@ public class ChatService {
     private final Provider provider;
     private final API api;
     private final Scanner scanner;
+    private final ContextManager contextManager;
 
     public ChatService(
             Provider provider,
             API api,
-            Scanner scanner
+            Scanner scanner,
+            ContextManager contextManager
     ) {
         this.provider = provider;
         this.api = api;
         this.scanner = scanner;
+        this.contextManager = contextManager;
     }
 
     public void start() throws Exception {
@@ -38,8 +43,36 @@ public class ChatService {
                         scanner
                 );
 
-        List<Message> messages =
-                new ArrayList<>();
+        ModelInfo model =
+                provider.getModelInfo(
+                        api,
+                        selectedModel
+                );
+
+        System.out.println(
+                "\nModel Context: "
+                        + model.getMaxContextTokens()
+        );
+
+        System.out.println(
+                "Model Max Output: "
+                        + model.getMaxOutputTokens()
+        );
+
+        Summarizer summarizer =
+                new ProviderSummarizer(
+                        provider,
+                        api,
+                        selectedModel
+                );
+
+        CompactionService compactionService =
+                new CompactionService(
+                        summarizer
+                );
+
+        ConversationContext context =
+                new ConversationContext();
 
         while (true) {
 
@@ -52,21 +85,40 @@ public class ChatService {
                 break;
             }
 
-            messages.add(
+            context.addMessage(
                     new Message(
                             "user",
                             prompt
                     )
             );
 
+            ContextBudget budget =
+                    contextManager.calculateBudget(
+                            model,
+                            context.getMessagesWithSummary()
+                    );
+
+            if (budget.shouldCompact()) {
+
+                System.out.println(
+                        "\nContext limit approaching. "
+                                + "Compacting conversation..."
+                );
+
+                compactionService.compact(
+                        context,
+                        10
+                );
+            }
+
             ProviderResponse response =
                     provider.sendRequest(
                             api,
                             selectedModel,
-                            messages
+                            context.getMessagesWithSummary()
                     );
 
-            messages.add(
+            context.addMessage(
                     new Message(
                             "assistant",
                             response.getContent()
