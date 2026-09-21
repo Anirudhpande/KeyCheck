@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.main.models.API;
 import src.main.models.Message;
+import src.main.models.ProviderResponse;
+import src.main.models.TokenUsage;
 import src.main.security.Encrypt;
 
 import java.net.URI;
@@ -86,9 +88,8 @@ public class GroqProvider implements Provider {
         return models;
     }
 
-
     @Override
-    public String sendRequest(
+    public ProviderResponse sendRequest(
             API api,
             String selectedModel,
             List<Message> messages
@@ -182,8 +183,9 @@ public class GroqProvider implements Provider {
         );
     }
 
-
-    private String parseResponse(String responseBody) {
+    private ProviderResponse parseResponse(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
@@ -192,32 +194,76 @@ public class GroqProvider implements Provider {
         JsonArray choices =
                 json.getAsJsonArray("choices");
 
-        if (choices == null ||
-                choices.isEmpty()) {
+        String answer = "No response generated";
 
-            return "No response generated";
+        if (choices != null &&
+                !choices.isEmpty()) {
+
+            JsonObject choice =
+                    choices
+                            .get(0)
+                            .getAsJsonObject();
+
+            JsonObject message =
+                    choice.getAsJsonObject("message");
+
+            if (message != null &&
+                    message.has("content") &&
+                    !message.get("content").isJsonNull()) {
+
+                answer =
+                        message
+                                .get("content")
+                                .getAsString();
+            }
         }
 
-        JsonObject choice =
-                choices
-                        .get(0)
-                        .getAsJsonObject();
+        JsonObject usage =
+                json.getAsJsonObject("usage");
 
-        JsonObject message =
-                choice.getAsJsonObject("message");
+        long inputTokens =
+                usage.get("prompt_tokens")
+                        .getAsLong();
 
-        if (message == null) {
-            return "No response message found";
+        long outputTokens =
+                usage.get("completion_tokens")
+                        .getAsLong();
+
+        long totalTokens =
+                usage.get("total_tokens")
+                        .getAsLong();
+
+        long cachedInputTokens = 0;
+
+        if (usage.has("prompt_tokens_details") &&
+                !usage.get("prompt_tokens_details").isJsonNull()) {
+
+            JsonObject promptDetails =
+                    usage.getAsJsonObject(
+                            "prompt_tokens_details"
+                    );
+
+            if (promptDetails.has("cached_tokens") &&
+                    !promptDetails.get("cached_tokens").isJsonNull()) {
+
+                cachedInputTokens =
+                        promptDetails
+                                .get("cached_tokens")
+                                .getAsLong();
+            }
         }
 
-        if (!message.has("content") ||
-                message.get("content").isJsonNull()) {
+        TokenUsage tokenUsage =
+                new TokenUsage(
+                        inputTokens,
+                        outputTokens,
+                        cachedInputTokens,
+                        totalTokens
+                );
 
-            return "No response content found";
-        }
-
-        return message
-                .get("content")
-                .getAsString();
+        return new ProviderResponse(
+                answer,
+                tokenUsage
+        );
     }
 }

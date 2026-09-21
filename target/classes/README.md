@@ -9,7 +9,13 @@ This is the core of VECTRA which is nothing but a BYOK platform.
 
 I have implemented the AES/GCM cryptographic encryption and decryption to encrypt and decrypt the api keys.
 
-so the flow of your program is that first the user gives the provider name, and API key, then we encrypt the API key, if the API key is accepted then we stored it in an object cause this is a mini project
-and we do not have a database as of now, after the object is stored, for all the prompts or query made to the encrypted API is first decrypted and if its verifies then only you get the response, else the program throws an exception.
+I have tried to optimize the code and tried to implement proper implementation of abstraction that i could think of at the moment. 
+Earlier KeyCheck was doing everything, now It's merely just an entry point in our program.
 
-so the next thing which i am gonna do in the project is that i will try to clean up my code and optimize it.
+I have implemented a basic implementation of giving the context of the earlier prompts of the user and responses of the AI by just adding everything into an array keeping the record of every prompt made by the user and response by the AI.
+
+I have to do something about this Chat History because at the moment I am just sending the whole conversation between the user and AI as the context which is just increasing the token counts in every prompt, which is really really bad. 
+
+I need to figure out how do you do that.
+
+Next what i am planning to do is that somehow reduce the token count of every prompt

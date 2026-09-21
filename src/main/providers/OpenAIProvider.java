@@ -1,5 +1,8 @@
 package src.main.providers;
 
+import src.main.models.ProviderResponse;
+import src.main.models.TokenUsage;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -58,8 +61,6 @@ public class OpenAIProvider implements Provider {
         return parseModels(response.body());
     }
 
-
-
     private List<String> parseModels(String responseBody) {
 
         JsonObject json =
@@ -85,7 +86,7 @@ public class OpenAIProvider implements Provider {
     }
 
     @Override
-    public String sendRequest(
+    public ProviderResponse sendRequest(
             API api,
             String selectedModel,
             List<Message> messages
@@ -177,48 +178,108 @@ public class OpenAIProvider implements Provider {
         );
     }
 
-    private String parseResponse(String responseBody) {
+    private ProviderResponse parseResponse(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
+        String answer = "";
+
         if (json.has("output_text")) {
 
-            return json
-                    .get("output_text")
-                    .getAsString();
-        }
-
-        var output =
-                json.getAsJsonArray("output");
-
-        for (var element : output) {
-
-            JsonObject outputItem =
-                    element.getAsJsonObject();
-
-            if (!outputItem.has("content")) {
-                continue;
-            }
-
-            var content =
-                    outputItem.getAsJsonArray("content");
-
-            for (var contentElement : content) {
-
-                JsonObject contentItem =
-                        contentElement.getAsJsonObject();
-
-                if (contentItem.has("text")) {
-
-                    return contentItem
-                            .get("text")
+            answer =
+                    json
+                            .get("output_text")
                             .getAsString();
+
+        } else {
+
+            var output =
+                    json.getAsJsonArray("output");
+
+            for (var element : output) {
+
+                JsonObject outputItem =
+                        element.getAsJsonObject();
+
+                if (!outputItem.has("content")) {
+                    continue;
+                }
+
+                var content =
+                        outputItem.getAsJsonArray("content");
+
+                for (var contentElement : content) {
+
+                    JsonObject contentItem =
+                            contentElement.getAsJsonObject();
+
+                    if (contentItem.has("text")) {
+
+                        answer =
+                                contentItem
+                                        .get("text")
+                                        .getAsString();
+
+                        break;
+                    }
+                }
+
+                if (!answer.isEmpty()) {
+                    break;
                 }
             }
         }
 
-        return "No text response found";
+        JsonObject usage =
+                json.getAsJsonObject("usage");
+
+        long inputTokens =
+                usage.get("input_tokens")
+                        .getAsLong();
+
+        long outputTokens =
+                usage.get("output_tokens")
+                        .getAsLong();
+
+        long totalTokens =
+                usage.get("total_tokens")
+                        .getAsLong();
+
+        long cachedInputTokens = 0;
+
+        if (usage.has("input_tokens_details")) {
+
+            JsonObject inputDetails =
+                    usage.getAsJsonObject(
+                            "input_tokens_details"
+                    );
+
+            if (inputDetails.has("cached_tokens")) {
+
+                cachedInputTokens =
+                        inputDetails
+                                .get("cached_tokens")
+                                .getAsLong();
+            }
+        }
+
+        TokenUsage tokenUsage =
+                new TokenUsage(
+                        inputTokens,
+                        outputTokens,
+                        cachedInputTokens,
+                        totalTokens
+                );
+
+        return new ProviderResponse(
+                answer.isEmpty()
+                        ? "No text response found"
+                        : answer,
+                tokenUsage
+        );
     }
 }

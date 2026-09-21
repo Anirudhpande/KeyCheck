@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.main.models.API;
 import src.main.models.Message;
+import src.main.models.ProviderResponse;
+import src.main.models.TokenUsage;
 import src.main.security.Encrypt;
 
 import java.net.URI;
@@ -91,7 +93,7 @@ public class AnthropicProvider implements Provider {
     }
 
     @Override
-    public String sendRequest(
+    public ProviderResponse sendRequest(
             API api,
             String selectedModel,
             List<Message> messages
@@ -196,34 +198,77 @@ public class AnthropicProvider implements Provider {
         );
     }
 
-    private String parseResponse(String responseBody) {
+    private ProviderResponse parseResponse(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
+        String answer = "No response generated";
+
         JsonArray content =
                 json.getAsJsonArray("content");
 
-        if (content == null ||
-                content.isEmpty()) {
+        if (content != null &&
+                !content.isEmpty()) {
 
-            return "No response generated";
-        }
+            for (JsonElement element : content) {
 
-        for (JsonElement element : content) {
+                JsonObject contentItem =
+                        element.getAsJsonObject();
 
-            JsonObject contentItem =
-                    element.getAsJsonObject();
+                if (contentItem.has("text")) {
 
-            if (contentItem.has("text")) {
+                    answer =
+                            contentItem
+                                    .get("text")
+                                    .getAsString();
 
-                return contentItem
-                        .get("text")
-                        .getAsString();
+                    break;
+                }
             }
         }
 
-        return "No response text found";
+        JsonObject usage =
+                json.getAsJsonObject("usage");
+
+        long inputTokens =
+                usage
+                        .get("input_tokens")
+                        .getAsLong();
+
+        long outputTokens =
+                usage
+                        .get("output_tokens")
+                        .getAsLong();
+
+        long cachedInputTokens = 0;
+
+        if (usage.has("cache_read_input_tokens") &&
+                !usage.get("cache_read_input_tokens").isJsonNull()) {
+
+            cachedInputTokens =
+                    usage
+                            .get("cache_read_input_tokens")
+                            .getAsLong();
+        }
+
+        long totalTokens =
+                inputTokens + outputTokens;
+
+        TokenUsage tokenUsage =
+                new TokenUsage(
+                        inputTokens,
+                        outputTokens,
+                        cachedInputTokens,
+                        totalTokens
+                );
+
+        return new ProviderResponse(
+                answer,
+                tokenUsage
+        );
     }
 }

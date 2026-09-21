@@ -60,6 +60,6 @@ public class KeyCheck {
                         scanner
                 );
 
-        chatService.Start();
+        chatService.start();
     }
 }

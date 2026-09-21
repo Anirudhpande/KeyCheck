@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.main.models.API;
 import src.main.models.Message;
+import src.main.models.ProviderResponse;
+import src.main.models.TokenUsage;
 import src.main.security.Encrypt;
 
 import java.net.URI;
@@ -85,7 +87,7 @@ public class GeminiProvider implements Provider {
     }
 
     @Override
-    public String sendRequest(
+    public ProviderResponse sendRequest(
             API api,
             String selectedModel,
             List<Message> messages
@@ -197,59 +199,101 @@ public class GeminiProvider implements Provider {
         );
     }
 
-    private String parseResponse(String responseBody) {
+    private ProviderResponse parseResponse(
+            String responseBody
+    ) {
 
         JsonObject json =
                 JsonParser.parseString(responseBody)
                         .getAsJsonObject();
 
+        String answer = "No response generated";
+
         JsonArray candidates =
                 json.getAsJsonArray("candidates");
 
-        if (candidates == null ||
-                candidates.isEmpty()) {
+        if (candidates != null &&
+                !candidates.isEmpty()) {
 
-            return "No response generated";
-        }
+            JsonObject candidate =
+                    candidates
+                            .get(0)
+                            .getAsJsonObject();
 
-        JsonObject candidate =
-                candidates
-                        .get(0)
-                        .getAsJsonObject();
+            JsonObject content =
+                    candidate.getAsJsonObject(
+                            "content"
+                    );
 
-        JsonObject content =
-                candidate.getAsJsonObject(
-                        "content"
-                );
+            if (content != null) {
 
-        if (content == null) {
-            return "No response content found";
-        }
+                JsonArray parts =
+                        content.getAsJsonArray(
+                                "parts"
+                        );
 
-        JsonArray parts =
-                content.getAsJsonArray(
-                        "parts"
-                );
+                if (parts != null &&
+                        !parts.isEmpty()) {
 
-        if (parts == null ||
-                parts.isEmpty()) {
+                    for (JsonElement element : parts) {
 
-            return "No response text found";
-        }
+                        JsonObject part =
+                                element.getAsJsonObject();
 
-        for (JsonElement element : parts) {
+                        if (part.has("text")) {
 
-            JsonObject part =
-                    element.getAsJsonObject();
+                            answer =
+                                    part
+                                            .get("text")
+                                            .getAsString();
 
-            if (part.has("text")) {
-
-                return part
-                        .get("text")
-                        .getAsString();
+                            break;
+                        }
+                    }
+                }
             }
         }
 
-        return "No response text found";
+        JsonObject usage =
+                json.getAsJsonObject("usageMetadata");
+
+        long inputTokens =
+                usage
+                        .get("promptTokenCount")
+                        .getAsLong();
+
+        long outputTokens =
+                usage
+                        .get("candidatesTokenCount")
+                        .getAsLong();
+
+        long totalTokens =
+                usage
+                        .get("totalTokenCount")
+                        .getAsLong();
+
+        long cachedInputTokens = 0;
+
+        if (usage.has("cachedContentTokenCount") &&
+                !usage.get("cachedContentTokenCount").isJsonNull()) {
+
+            cachedInputTokens =
+                    usage
+                            .get("cachedContentTokenCount")
+                            .getAsLong();
+        }
+
+        TokenUsage tokenUsage =
+                new TokenUsage(
+                        inputTokens,
+                        outputTokens,
+                        cachedInputTokens,
+                        totalTokens
+                );
+
+        return new ProviderResponse(
+                answer,
+                tokenUsage
+        );
     }
 }
