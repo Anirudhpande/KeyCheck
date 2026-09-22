@@ -17,6 +17,10 @@ public class ContextManager {
         this.tokenEstimator = tokenEstimator;
     }
 
+    public TokenEstimator getTokenEstimator() {
+        return tokenEstimator;
+    }
+
     public ContextBudget calculateBudget(
             ModelInfo model,
             List<Message> messages
@@ -50,5 +54,6 @@ public class ContextManager {
                 threshold,
                 estimatedInputTokens
         );
+
     }
 }

@@ -68,7 +68,8 @@ public class ChatService {
 
         CompactionService compactionService =
                 new CompactionService(
-                        summarizer
+                        summarizer,
+                        contextManager.getTokenEstimator()
                 );
 
         ConversationContext context =
@@ -92,12 +93,19 @@ public class ChatService {
                     )
             );
 
+            /*
+             * Calculate the current context budget.
+             */
             ContextBudget budget =
                     contextManager.calculateBudget(
                             model,
                             context.getMessagesWithSummary()
                     );
 
+            /*
+             * If the context has crossed the threshold,
+             * compact the older conversation.
+             */
             if (budget.shouldCompact()) {
 
                 System.out.println(
@@ -105,9 +113,27 @@ public class ChatService {
                                 + "Compacting conversation..."
                 );
 
+                long targetTokens =
+                        budget.getAvailableInputTokens() / 2;
+
                 compactionService.compact(
                         context,
-                        10
+                        targetTokens
+                );
+
+                /*
+                 * Recalculate after compaction.
+                 */
+                budget =
+                        contextManager.calculateBudget(
+                                model,
+                                context.getMessagesWithSummary()
+                        );
+
+                System.out.println(
+                        "Context after compaction: "
+                                + budget.getEstimatedInputTokens()
+                                + " estimated tokens"
                 );
             }
 
