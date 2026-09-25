@@ -1,4 +1,4 @@
-    # VECTRA
+## VECTRA
 
 VECTRA is a multi-provider AI API platform built around a **BYOK (Bring Your Own Key)** architecture.
 
