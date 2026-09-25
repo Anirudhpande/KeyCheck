@@ -16,11 +16,7 @@ VECTRA is currently in the prototype stage.
 
 The core provider abstraction, API-key encryption, model discovery, token usage tracking, and context-window management are implemented.
 
-<<<<<<< HEAD
-Next what i am planning to do is that somehow reduce the token count of every prompt
-streak saver commit
-another streak saver
-=======
+
 The project is being developed incrementally, with each subsystem being tested before moving to the next stage.
 
 ---
