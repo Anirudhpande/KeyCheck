@@ -436,16 +436,6 @@ to end the conversation.
 
 ---
 
-# Environment Variables
-
-Local secrets should never be committed to Git.
-
-The repository ignores:
-
-```text
-.env
-```
-
 A future version will provide an `.env.example` file containing only the required variable names and no real credentials.
 
 ---
